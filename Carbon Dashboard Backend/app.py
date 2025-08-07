@@ -8,7 +8,7 @@ from routes.project_routes import projects_bp
 from routes.retirement_routes import retire_bp
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"])  # for frontend
+CORS(app, origins=["http://localhost:5174"])  # for frontend
 
 # MongoDB
 init_db(app)
