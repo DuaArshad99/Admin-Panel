@@ -7,52 +7,51 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Download } from "lucide-react"
-
+import BulkUploadModal  from "./bulk-upload-modal"
+import { Upload } from "lucide-react"; 
 
 export function ProjectsManager({ onEditProject, onNewProject }) {
   const [searchTerm, setSearchTerm] = useState("")
-
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
   const [projects, setProjects] = useState([])
+  const [filteredProjects, setFilteredProjects] = useState(projects)
 
   // Fetch all projects
   const fetchProjects = async () => {
   try {
     const response = await axios.get("http://localhost:5000/api/projects");
+    setFilteredProjects(response.data.projects || []);
     setProjects(response.data.projects || []);
   } catch (error) {
     console.error("Error fetching projects:", error);
-    setProjects([]);
+    setFilteredProjects([]);
   }
 };
 
-useEffect(() => {
-  fetchProjects();
-}, []);
+useEffect(() => {fetchProjects();}, []);
 
 
   //Search
   useEffect(() => {
-  if (!searchTerm.trim()) return;
+    setFilteredProjects(projects)
+  }, [projects])
 
-  const fetchSearchResults = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/projects/search?q=${encodeURIComponent(searchTerm)}");
-      setProjects(res.data.projects || []);
-    } catch (err) {
-      console.error("Error searching projects:", err);
-      const response = await axios.get("http://localhost:5000/api/projects");
-      setProjects(response.data.projects || []);
+  const handleSearch = async () => {
+    if (searchTerm.trim() === "") {
+      // If the search term is empty, display all projects
+      setFilteredProjects(projects);
+      return;
     }
-  };
-
-  const delayDebounce = setTimeout(() => {
-    fetchSearchResults();
-  }, 300);
-
-  return () => clearTimeout(delayDebounce);
-}, [searchTerm]);
-
-
+    try {
+      alert(searchTerm)
+      const response = await axios.get(`http://localhost:5000/api/projects/search`, {
+        params: { query: searchTerm }
+      })
+      setFilteredProjects(response.data) 
+    } catch (error) {
+      console.error("Search error:", error)
+    }
+  }
 
   
 //view  details
@@ -80,23 +79,25 @@ const handleDeleteProject = async (projectId) => {
   }
 };
 
-
-
-const filteredProjects = searchTerm.trim()
-  ? projects.filter(
-      (project) =>
-        project["Project Name"]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project["Country"]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project["Sector"]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project["Registry"]?.toLowerCase().includes(searchTerm.toLowerCase())
-    )  : projects;
+  const handleBulkUploadComplete = () => {
+    fetchProjects();
+    setShowBulkUpload(false); // Close the modal after upload
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Active":
+      case "Listed":
         return "bg-green-100 text-green-800"
-      case "Verified":
+      case "Registered":
         return "bg-blue-100 text-blue-800"
+      case "Withdrawn":
+        return "bg-yellow-100 text-yellow-800"
+      case "Tokenized":
+        return "bg-brown-100 text-brown-800"
+      case "Authorized":
+        return "bg-pink-100 text-pink-800"
+      case "Validated":
+        return "bg-orange-100 text-pink-800"
       case "CORSIA-eligible":
         return "bg-purple-100 text-purple-800"
       default:
@@ -111,6 +112,10 @@ const filteredProjects = searchTerm.trim()
           <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
           <p className="text-gray-600 mt-2">Manage your carbon offset projects</p>
         </div>
+        <Button variant="outline" onClick={() => setShowBulkUpload(true)} className="bg-transparent">
+            <Upload className="w-4 h-4 mr-2" />
+            Bulk Upload
+          </Button>
         <Button onClick={onNewProject} className="bg-green-600 hover:bg-green-700">
           <Plus className="w-4 h-4 mr-2" />
           Add New Project
@@ -134,7 +139,7 @@ const filteredProjects = searchTerm.trim()
                   className="pl-10 w-64"
                 />
               </div>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleSearch} >
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </Button>
@@ -211,6 +216,8 @@ const filteredProjects = searchTerm.trim()
           </Table>
         </CardContent>
       </Card>
+
+      <BulkUploadModal open={showBulkUpload} onOpenChange={setShowBulkUpload} onUploadComplete={handleBulkUploadComplete} />
     </div>
   )
 }

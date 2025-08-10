@@ -11,8 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Upload, X } from "lucide-react"
 
+
 export function ProjectForm({ project, onBack }) {
+
   const [formData, setFormData] = useState({
+    _id: project?._id || "",
     name: project?.["Project Name"] || "",
     projectId: project?.["Id"] || "",
     developer: project?.["Developer"] || "",
@@ -59,7 +62,8 @@ export function ProjectForm({ project, onBack }) {
     e.preventDefault()
     try {
       if (project) {
-        await axios.put("http://localhost:5000/api/projects/${project._id}", formData)
+        alert("Updating project with ID:", project._id);
+        await axios.put(`http://localhost:5000/api/projects/update/${project._id}`, formData)
       } else {
         await axios.post("http://localhost:5000/api/projects", formData)
       }
@@ -145,10 +149,15 @@ export function ProjectForm({ project, onBack }) {
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Verified">Verified</SelectItem>
+                        <SelectItem value="Listed">Listed</SelectItem>
+                        <SelectItem value="Verified">Registered</SelectItem>
+                        <SelectItem value="Authorized">Authorized</SelectItem>
+                        <SelectItem value="Tokenized">Tokenized</SelectItem>
+                        <SelectItem value="Burnt">Burnt</SelectItem>
                         <SelectItem value="CORSIA-eligible">CORSIA-eligible</SelectItem>
-                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Retired">Retired</SelectItem>
+                        <SelectItem value="Validated">Validated</SelectItem>
+                        <SelectItem value="Withdrawn">Withdrawn</SelectItem>
                         <SelectItem value="Inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>

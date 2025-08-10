@@ -9,46 +9,77 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Filter, MoreHorizontal, UserPlus, Edit, Trash2, Shield, UsersIcon } from "lucide-react"
 import { UserForm } from "./user-form"
+import axios from "axios"
 
 export function Users() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [showUserForm, setShowUserForm] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
-  const [users, setUsers] = useState([])
-  
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState(users);
 
+  // Fetch all 
   const fetchUsers = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/users`);
+    setFilteredUsers(response.data.users || []);
+    setUsers(response.data.users || []);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    setFilteredUsers([]);
+  }
+};
+
+useEffect(() => {fetchUsers();}, []);
+
+
+  //Search
+  useEffect(() => {
+    setFilteredUsers(users)
+  }, [users])
+
+  const handleSearch = async () => {
+    if (searchTerm.trim() === "") {
+      // If the search term is empty, display all projects
+      setFilteredUsers(users);
+      return;
+    }
     try {
-      const res = await axios.get("/api/auth/users")
-      setUsers(res.data?.users || [])
-    } catch (err) {
-      console.error("Failed to fetch users", err)
+      alert(searchTerm)
+      const response = await axios.get(`http://localhost:5000/api/users/search`, {
+        params: { query: searchTerm }
+      })
+      setFilteredUsers(response.data) 
+    } catch (error) {
+      console.error("Search error:", error)
     }
   }
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const handleDeleteUser = async (userId) => {
-  if (!window.confirm("Are you sure you want to delete this user?")) return;
-
+  
+//view  details
+  const handleViewPermissions = async (userId) => {
   try {
-    await axios.delete(`/api/users/${userId}`);
-    alert("User deleted successfully");
-  } catch (err) {
-    console.error("Delete failed", err);
-    alert("Failed to delete user");
+    const response = await axios.get(`http://localhost:5000/api/users/${userId}`);
+    const user = response.data;
+    alert(`User Name: ${user["firstName"]}\nRole: ${user.role}\nCreate Projects: ${user.permissions.canCreateProjects}\nDelete Projects: ${user.permissions.canDeleteProjects}`);
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    alert("Failed to fetch user details");
   }
-}
+};
 
-
+//delete project
+const handleDeleteUser = async (userId) => {
+  try {
+    await axios.delete(`http://localhost:5000/api/users/${userId}`);
+    setUsers(prevUsers =>prevUsers.filter(user => user._id !== userId)
+    );
+    fetchUsers();
+  } catch (error) {
+    console.error("Failed to delete user:", error);
+  }
+};
+  
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -91,6 +122,7 @@ export function Users() {
   const handleBackToUsers = () => {
     setShowUserForm(false)
     setEditingUser(null)
+    fetchUsers()
   }
 
   if (showUserForm) {
@@ -119,7 +151,6 @@ export function Users() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{users.length}</div>
-            <p className="text-xs text-gray-500">+X this month</p>
           </CardContent>
         </Card>
 
@@ -174,7 +205,7 @@ export function Users() {
                   className="pl-10 w-64"
                 />
               </div>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleSearch}>
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </Button>
@@ -188,27 +219,19 @@ export function Users() {
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last Login</TableHead>
-                <TableHead>Projects</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Date Joined</TableHead>
+
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user._id}>
+                <TableRow key={user["_id"]}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={user.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
                       <div>
-                        <div className="font-medium text-gray-900">{user.name}</div>
+                        <div className="font-medium text-gray-900">{user["firstName"]} </div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
@@ -219,8 +242,8 @@ export function Users() {
                   <TableCell>
                     <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-gray-600">{user.lastLogin}</TableCell>
-                  <TableCell className="font-medium">{user.projectsManaged}</TableCell>
+                  <TableCell className="text-gray-600">{user.phone}</TableCell>
+                  <TableCell className="text-gray-600">{user.joinDate}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -233,11 +256,11 @@ export function Users() {
                           <Edit className="w-4 h-4 mr-2" />
                           Edit User
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewPermissions(user._id)}>
                           <Shield className="w-4 h-4 mr-2" />
-                          Manage Permissions
+                          View Permissions
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user.id)}>
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user._id)}>
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete User
                         </DropdownMenuItem>

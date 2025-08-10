@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Upload, User, Mail, Phone, MapPin, Calendar } from "lucide-react"
+import axios from "axios"
 
 
 
@@ -33,25 +34,23 @@ export function UserForm({ user, onBack }) {
       canIssueCertificates: user?.permissions?.canIssueCertificates || false,
     },
   })
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      if (user?._id) {
-        await axios.put(`/api/users/${user._id}`, formData)
-        alert("User updated successfully")
-      } 
-      else {
-        await axios.post("/api/users", formData)
-        alert("User created successfully")
-      }
-      onBack()
-    } 
-    catch (err) {
-      console.error("Failed to submit user form:", err)
-      alert("An error occurred")
-    }
-  }
+   const handleSubmit = async (e) => {
+     e.preventDefault();
+     try {
+       if (user) {
+         await axios.put(`http://localhost:5000/api/users/${user._id}`, formData);
+         alert("User  updated successfully");
+       } else {
+         await axios.post("http://localhost:5000/api/users", formData);
+         alert("User  created successfully");
+       } 
+       onBack(); 
+     } catch (err) {
+       console.error("Failed to submit user form:", err);
+       alert("An error occurred");
+     }
+   };
+   
 
 
   const handlePermissionChange = (permission, value) => {
@@ -140,6 +139,7 @@ export function UserForm({ user, onBack }) {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+1 (555) 123-4567"
+                      required
                     />
                   </div>
                 </div>
@@ -155,6 +155,7 @@ export function UserForm({ user, onBack }) {
                       value={formData.location}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       placeholder="New York, USA"
+                      required
                     />
                   </div>
                   <div>
@@ -166,6 +167,7 @@ export function UserForm({ user, onBack }) {
                       id="joinDate"
                       type="date"
                       value={formData.joinDate}
+                      required
                       onChange={(e) => setFormData({ ...formData, joinDate: e.target.value })}
                     />
                   </div>
@@ -212,6 +214,7 @@ export function UserForm({ user, onBack }) {
                     <Select
                       value={formData.department}
                       onValueChange={(value) => setFormData({ ...formData, department: value })}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
@@ -378,32 +381,6 @@ export function UserForm({ user, onBack }) {
                 )}
               </CardContent>
             </Card>
-
-            {user && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>User Stats</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Projects Managed:</span>
-                    <span className="font-medium">12</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Last Login:</span>
-                    <span className="font-medium">2 hours ago</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Account Created:</span>
-                    <span className="font-medium">Jan 15, 2024</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Logins:</span>
-                    <span className="font-medium">247</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </form>

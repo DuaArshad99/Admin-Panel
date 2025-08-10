@@ -6,7 +6,8 @@ from controller.project_controller import (
     create_project_controller,
     search_projects_controller,
     delete_project_controller,
-    update_project_controller
+    update_project_controller,
+    upload_csv_controller,
 )
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/api/projects')
@@ -31,7 +32,10 @@ def search_projects():
 def delete_project(project_id):
     return delete_project_controller(project_id)
 
-@projects_bp.route('/api/projects/<project_id>', methods=['PUT'])
+@projects_bp.route('/update/<string:project_id>', methods=['PUT'])
 def update_project(project_id):
     return update_project_controller(project_id)
 
+@projects_bp.route('/uploadcsv', methods=['POST'])
+def upload_csv():
+    return upload_csv_controller()

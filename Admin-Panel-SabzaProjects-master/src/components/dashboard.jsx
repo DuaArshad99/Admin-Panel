@@ -8,6 +8,8 @@ import axios from "axios"
 
 export function Dashboard() {
   const [projectCount, setProjectCount] = useState(0);
+  const [userCount, setUserCount] = useState(0);
+  const [activeUser, setActiveUser]=useState(0);
   const [overview, setOverview] = useState({
     totalProjects: 0,
     activeCredits: 0,
@@ -15,25 +17,31 @@ export function Dashboard() {
     totalRetirements: 0
   })
   const [recentProjects, setRecentProjects] = useState([])
+
   const [breakdown, setBreakdown] = useState([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [overviewRes, breakdownRes, projectsRes] = await Promise.all([
+        const [overviewRes, breakdownRes] = await Promise.all([
           axios.get("http://localhost:5000/api/dashboard/overview"),
           axios.get("http://localhost:5000/api/dashboard/project-breakdown"),
-          axios.get("http://localhost:5000/api/projects")
         ])
 
         setOverview(overviewRes.data.overview)
         setBreakdown(breakdownRes?.data?.projectBreakdown || [])
 
-        // Fetch recent projects manually (optional)
+        
         const response = await axios.get("http://localhost:5000/api/projects")
         const projects = response.data.projects || [];
         setProjectCount(projects.length);
         setRecentProjects((response.data.projects || []).slice(0, 5));
+
+        const res = await axios.get("http://localhost:5000/api/users")
+        const users = res.data.users || [];
+        setUserCount(users.length);
+        const activeU=users.filter(user => user.status === "Active").length
+        setActiveUser(activeU);
         
       } catch (error) {
         console.error("Dashboard fetch error:", error)
@@ -44,40 +52,6 @@ export function Dashboard() {
   }, [])
 
 
-  const stats = [
-    {
-      title: "Total Projects",
-      value: "156",
-      change: "+12%",
-      trend: "up",
-      icon: Leaf,
-      color: "text-green-600",
-    },
-    {
-      title: "CO₂ Offset (tCO₂e)",
-      value: "2.4M",
-      change: "+8.2%",
-      trend: "up",
-      icon: TrendingUp,
-      color: "text-blue-600",
-    },
-    {
-      title: "Active Users",
-      value: "1,234",
-      change: "+5.1%",
-      trend: "up",
-      icon: Users,
-      color: "text-purple-600",
-    },
-    {
-      title: "Certificates Issued",
-      value: "89",
-      change: "-2.3%",
-      trend: "down",
-      icon: FileCheck,
-      color: "text-orange-600",
-    },
-  ]
 
   return (
     <div className="space-y-6">
@@ -88,27 +62,41 @@ export function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          const TrendIcon = stat.trend === "up" ? ArrowUpRight : ArrowDownRight
-          return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-                <Icon className={`w-5 h-5 ${stat.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{projectCount}</div>
-                <div className="flex items-center text-sm mt-1">
-                  <TrendIcon className={`w-4 h-4 mr-1 ${stat.trend === "up" ? "text-green-600" : "text-red-600"}`} />
-                  <span className={stat.trend === "up" ? "text-green-600" : "text-red-600"}>{stat.change}</span>
-                  <span className="text-gray-500 ml-1">from last month</span>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Projects</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{projectCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{userCount}</div>
+          </CardContent>
+        </Card>
+
+         <Card>
+          <CardHeader>
+            <CardTitle>Active Users</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{activeUser}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>CO2 Offset</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">X kg</div>
+          </CardContent>
+        </Card>
       </div>
+    
 
       {/* Recent Projects */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
