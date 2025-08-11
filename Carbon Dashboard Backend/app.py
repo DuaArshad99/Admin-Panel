@@ -18,7 +18,8 @@ def print_debug_info(app):
     print("\n" + "-"*50 + "\n")
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"])  # for frontend
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:5174","http://localhost:5175" ]}}, supports_credentials=True)  # for frontend
+ # for frontend
 
 # MongoDB
 init_db(app)

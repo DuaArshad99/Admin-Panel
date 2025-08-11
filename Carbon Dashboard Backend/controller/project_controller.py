@@ -193,18 +193,42 @@ def upload_csv_controller():
 
         if confirm:
             records = [project_schema(row) for row in df.to_dict(orient="records")]
+
+            duplicates = []
+
+            for i, rec in enumerate(records):
+                exists = mongo.db.projects.find_one({
+                    "Id": rec.get("Id"),
+                    "Registry": rec.get("Registry")
+                })
+
+                if exists:
+                    duplicates.append({
+                        "index": i,  
+                        "Id": rec.get("Id"),
+                        "Registry": rec.get("Registry")
+                    })
+
+            if duplicates:
+                return jsonify({
+                    "status": "error",
+                    "message": "Duplicate records found based on Project Id and registry",
+                    "duplicates": duplicates
+                }), 400
+
             inserted = mongo.db.projects.insert_many(records)
+
             return jsonify({
                 "status": "success",
                 "inserted": len(inserted.inserted_ids)
             }), 200
-
+        
         return jsonify({
             "status": "preview",
             "fields": fields,
             "sample": preview,
             "message": "Set confirm=true to insert into MongoDB"
         }), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
