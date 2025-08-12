@@ -8,6 +8,7 @@ def user_schema(data):
         "firstName": data.get("firstName"),
         "lastName": data.get("lastName"),
         "email": data.get("email"),
+        "password": data.get("password"),
         "phone": data.get("phone"),
         "walletAddress": data.get("walletAddress"),
         "companyName": data.get("companyName"),

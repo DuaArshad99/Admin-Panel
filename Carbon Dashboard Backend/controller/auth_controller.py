@@ -2,6 +2,7 @@ from flask import request, jsonify
 from db import mongo
 from datetime import datetime, timezone
 from bson.objectid import ObjectId
+from werkzeug.security import generate_password_hash, check_password_hash
 
 #wallet authentication
 def wallet_login_controller():
@@ -19,37 +20,24 @@ def wallet_login_controller():
     return jsonify({"message": "Wallet login successful","walletAddress": wallet}), 200
 
 
-# Email login
-def email_login_controller():
-    data = request.json
-    email = data.get("email")
-
-    if not email:
-        return jsonify({"error": "Email is required"}), 400
-
-    user = mongo.db.users.find_one({"email": email})
-
-    if not user:
-        return jsonify({"error": "User does not exist"}), 400
-
-    return jsonify({"message": "Email login successful",  "email": email,  "role": user.get("role", "user")}), 200
-
-
 #create user
 def create_user_controller():
     data = request.json
     if not data:
         return jsonify({"error": "Missing payload"}), 400
 
-    required_fields = ["firstName", "lastName", "email", "phone", "role", "department", "status", "location", "joinDate"]
+    required_fields = ["firstName", "lastName", "email", "phone", "role", "department", "status", "location", "joinDate", "password"]
     for field in required_fields:
         if not data.get(field):
             return jsonify({"error": f"{field} is required"}), 400
+        
+    hashed_password = generate_password_hash(data.get("password"))
 
     new_user = {
         "firstName": data.get("firstName", "").strip(),
         "lastName": data.get("lastName", "").strip(),
         "email": data.get("email", "").strip(),
+        "password": hashed_password,
         "phone": data.get("phone", "").strip(),
         "role": data.get("role", "Viewer").strip(),
         "department": data.get("department", "").strip(),
@@ -154,3 +142,26 @@ def delete_user_controller(user_id):
             return jsonify({"error": "User  not found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+
+    user = mongo.db.users.find_one({"email": email})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if "password" not in user:
+        return jsonify({"error": "User record not found"}), 400
+
+    if not check_password_hash(user["password"], password):
+        return jsonify({"error": "Invalid password"}), 401
+    
+    role = user.get("role")
+   
+    return jsonify({"message": "Login successful", "role":role }), 200
